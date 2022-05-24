@@ -266,29 +266,29 @@ class PluginSynergywholesale extends RegistrarPlugin
 
             if (isset($response->$type)) {
                 $info[$internalType]['Company'] = array($this->user->lang('Organization'), isset($response->$type->organisation) ? $response->$type->organisation : '');
-                $info[$internalType]['First Name'] = array($this->user->lang('First Name'), $response->$type->firstname);
-                $info[$internalType]['Last Name']  = array($this->user->lang('Last Name'), $response->$type->lastname);
-                $info[$internalType]['Address 1']  = array($this->user->lang('Address').' 1', $response->$type->address1);
-                $info[$internalType]['Address 2']  = array($this->user->lang('Address').' 2', isset($response->$type->address2) ? $response->$type->address2 : '');
+                $info[$internalType]['FirstName'] = array($this->user->lang('First Name'), $response->$type->firstname);
+                $info[$internalType]['LastName']  = array($this->user->lang('Last Name'), $response->$type->lastname);
+                $info[$internalType]['Address1']  = array($this->user->lang('Address').' 1', $response->$type->address1);
+                $info[$internalType]['Address2']  = array($this->user->lang('Address').' 2', isset($response->$type->address2) ? $response->$type->address2 : '');
                 $info[$internalType]['City']      = array($this->user->lang('City'), $response->$type->suburb);
-                $info[$internalType]['State / Province']  = array($this->user->lang('Province').'/'.$this->user->lang('State'), $response->$type->state);
+                $info[$internalType]['StateProvince']  = array($this->user->lang('Province').'/'.$this->user->lang('State'), $response->$type->state);
                 $info[$internalType]['Country']   = array($this->user->lang('Country'), $response->$type->country);
-                $info[$internalType]['Postal Code']  = array($this->user->lang('Postal Code'), $response->$type->postcode);
-                $info[$internalType]['Email Address']     = array($this->user->lang('E-mail'), $response->$type->email);
+                $info[$internalType]['PostalCode']  = array($this->user->lang('Postal Code'), $response->$type->postcode);
+                $info[$internalType]['EmailAddress']     = array($this->user->lang('E-mail'), $response->$type->email);
                 $info[$internalType]['Phone']  = array($this->user->lang('Phone'), $response->$type->phone);
                 $info[$internalType]['Fax']       = array($this->user->lang('Fax'), isset($response->$type->fax) ? $response->$type->fax : '');
             } else {
                 $info[$internalType] = array(
                     'Company'  => array($this->user->lang('Organization'), ''),
-                    'First Name'         => array($this->user->lang('First Name'), ''),
-                    'Last Name'          => array($this->user->lang('Last Name'), ''),
-                    'Address 1'          => array($this->user->lang('Address').' 1', ''),
-                    'Address 2'          => array($this->user->lang('Address').' 2', ''),
+                    'FirstName'         => array($this->user->lang('First Name'), ''),
+                    'LastName'          => array($this->user->lang('Last Name'), ''),
+                    'Address1'          => array($this->user->lang('Address').' 1', ''),
+                    'Address2'          => array($this->user->lang('Address').' 2', ''),
                     'City'              => array($this->user->lang('City'), ''),
-                    'State / Province'         => array($this->user->lang('Province').'/'.$this->user->lang('State'), ''),
+                    'StateProvince'         => array($this->user->lang('Province').'/'.$this->user->lang('State'), ''),
                     'Country'           => array($this->user->lang('Country'), ''),
-                    'Postal Code'        => array($this->user->lang('Postal Code'), ''),
-                    'Email Address'      => array($this->user->lang('E-mail'), ''),
+                    'PostalCode'        => array($this->user->lang('Postal Code'), ''),
+                    'EmailAddress'      => array($this->user->lang('E-mail'), ''),
                     'Phone'             => array($this->user->lang('Phone'), ''),
                     'Fax'               => array($this->user->lang('Fax'), ''),
                 );
