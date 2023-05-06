@@ -6,7 +6,7 @@ class PluginSynergywholesale extends RegistrarPlugin
     public $features = [
         'nameSuggest' => true,
         'importDomains' => true,
-        'importPrices' => false,
+        'importPrices' => true, // This option allows TLD Importer to work for this registra
     ];
 
     private $dnsTypes = ['A', 'AAAA',  'MX', 'CNAME', 'TXT'];
@@ -42,12 +42,12 @@ class PluginSynergywholesale extends RegistrarPlugin
             lang('Registered Actions') => array (
                                 'type'          => 'hidden',
                                 'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
-                                'value'         => 'Renew (Renew Domain),DomainTransferWithPopup (Initiate Transfer),Cancel',
+                                'value'         => 'Renew (Renew Domain),DomainTransferWithPopup (Initiate Transfer),IDProtect (Toggle ID Protection),Cancel',
                                 ),
             lang('Registered Actions For Customer') => array (
                                 'type'          => 'hidden',
                                 'description'   => lang('Current actions that are active for this plugin (when a domain is registered)'),
-                                'value'         => '',
+                                'value'         => 'IDProtect (Toggle ID Protection)',
             )
         );
 
@@ -68,6 +68,8 @@ class PluginSynergywholesale extends RegistrarPlugin
             CE_Lib::log(4, $response->errorMessage);
             $status = 5;
         }
+        
+
 
         $domains[] = [
             'tld' => $tld,
@@ -76,6 +78,10 @@ class PluginSynergywholesale extends RegistrarPlugin
         ];
 
         return ['result' => $domains];
+        
+        
+
+            
     }
 
     /**
@@ -103,6 +109,45 @@ class PluginSynergywholesale extends RegistrarPlugin
         $userPackage->setCustomField("Registrar Order Id", $userPackage->getCustomField("Registrar").'-'.$orderid);
         return $userPackage->getCustomField('Domain Name') . ' has been registered.';
     }
+    
+    function doUpdate($args) {}
+    
+    function doIDProtect($params)
+    {
+        $userPackage = new UserPackage($params['userPackageId']);
+        $response = $this->makeRequest('domainInfo', ['domainName' => $userPackage->getCustomField('Domain Name')]);
+                if ($response->status != 'OK') {
+            throw new CE_Exception($response->errorMessage);
+        } 
+        
+
+             
+        if ($response->idProtect == 'Enabled') {
+          //  $idProtectCheck->setCustomField('idProtect', 'Disabled');
+                //  $userPackage->setCustomField('ID Protection', 'Disabled');
+            $response = $this->makeRequest('disableIDProtection', ['domainName' => $userPackage->getCustomField('Domain Name')]);
+                if ($response->status != 'OK') {
+            throw new CE_Exception($response->errorMessage);
+        }
+               $userPackage->setCustomField('ID Protection', 'Disabled', CUSTOM_FIELDS_FOR_PACKAGE);
+        return $this->user->lang('ID Protection - Disabled');
+        } else {
+           // $idProtectCheck->setCustomField('idProtect', 'Enabled');
+          //  $userPackage->setCustomField('ID Protection', 'Enabled');
+
+            $response = $this->makeRequest('enableIDProtection', ['domainName' => $userPackage->getCustomField('Domain Name')]);
+                if ($response->status != 'OK') {
+            throw new CE_Exception($response->errorMessage);
+        }
+                $userPackage->setCustomField('ID Protection', 'Enabled', CUSTOM_FIELDS_FOR_PACKAGE);
+        return $this->user->lang('ID Protection - Enabled');
+        }
+
+        
+        
+    }
+    
+
 
     /**
      * Renew domain name
@@ -164,6 +209,30 @@ class PluginSynergywholesale extends RegistrarPlugin
             throw new CE_Exception($response->errorMessage);
         }
     }
+
+
+
+    function getTLDsAndPrices($params)
+    {
+
+		$response = $this->makeRequest('getDomainPricing');
+        if ($response->status != 'OK') {
+            throw new CE_Exception($response->errorMessage);
+        }
+
+        $data = $response;
+        $tlds = [];
+       foreach ($data->pricing as $value) {
+            $tld = $value->tld;
+            $tlds[$tld]['pricing']['register'] = $value->register_1_year;
+            $tlds[$tld]['pricing']['transfer'] = $value->transfer;
+            $tlds[$tld]['pricing']['renew'] = $value->renew;
+        }
+        return $tlds;
+    }
+
+
+
 
     function registerDomain($params)
     {
@@ -266,29 +335,29 @@ class PluginSynergywholesale extends RegistrarPlugin
 
             if (isset($response->$type)) {
                 $info[$internalType]['Company'] = array($this->user->lang('Organization'), isset($response->$type->organisation) ? $response->$type->organisation : '');
-                $info[$internalType]['FirstName'] = array($this->user->lang('First Name'), $response->$type->firstname);
-                $info[$internalType]['LastName']  = array($this->user->lang('Last Name'), $response->$type->lastname);
-                $info[$internalType]['Address1']  = array($this->user->lang('Address').' 1', $response->$type->address1);
-                $info[$internalType]['Address2']  = array($this->user->lang('Address').' 2', isset($response->$type->address2) ? $response->$type->address2 : '');
+                $info[$internalType]['First Name'] = array($this->user->lang('First Name'), $response->$type->firstname);
+                $info[$internalType]['Last Name']  = array($this->user->lang('Last Name'), $response->$type->lastname);
+                $info[$internalType]['Address 1']  = array($this->user->lang('Address').' 1', $response->$type->address1);
+                $info[$internalType]['Address 2']  = array($this->user->lang('Address').' 2', isset($response->$type->address2) ? $response->$type->address2 : '');
                 $info[$internalType]['City']      = array($this->user->lang('City'), $response->$type->suburb);
-                $info[$internalType]['StateProvince']  = array($this->user->lang('Province').'/'.$this->user->lang('State'), $response->$type->state);
+                $info[$internalType]['State / Province']  = array($this->user->lang('Province').'/'.$this->user->lang('State'), $response->$type->state);
                 $info[$internalType]['Country']   = array($this->user->lang('Country'), $response->$type->country);
-                $info[$internalType]['PostalCode']  = array($this->user->lang('Postal Code'), $response->$type->postcode);
-                $info[$internalType]['EmailAddress']     = array($this->user->lang('E-mail'), $response->$type->email);
+                $info[$internalType]['Postal Code']  = array($this->user->lang('Postal Code'), $response->$type->postcode);
+                $info[$internalType]['Email Address']     = array($this->user->lang('E-mail'), $response->$type->email);
                 $info[$internalType]['Phone']  = array($this->user->lang('Phone'), $response->$type->phone);
                 $info[$internalType]['Fax']       = array($this->user->lang('Fax'), isset($response->$type->fax) ? $response->$type->fax : '');
             } else {
                 $info[$internalType] = array(
                     'Company'  => array($this->user->lang('Organization'), ''),
-                    'FirstName'         => array($this->user->lang('First Name'), ''),
-                    'LastName'          => array($this->user->lang('Last Name'), ''),
-                    'Address1'          => array($this->user->lang('Address').' 1', ''),
-                    'Address2'          => array($this->user->lang('Address').' 2', ''),
+                    'First Name'         => array($this->user->lang('First Name'), ''),
+                    'Last Name'          => array($this->user->lang('Last Name'), ''),
+                    'Address 1'          => array($this->user->lang('Address').' 1', ''),
+                    'Address 2'          => array($this->user->lang('Address').' 2', ''),
                     'City'              => array($this->user->lang('City'), ''),
-                    'StateProvince'         => array($this->user->lang('Province').'/'.$this->user->lang('State'), ''),
+                    'State / Province'         => array($this->user->lang('Province').'/'.$this->user->lang('State'), ''),
                     'Country'           => array($this->user->lang('Country'), ''),
-                    'PostalCode'        => array($this->user->lang('Postal Code'), ''),
-                    'EmailAddress'      => array($this->user->lang('E-mail'), ''),
+                    'Postal Code'        => array($this->user->lang('Postal Code'), ''),
+                    'Email Address'      => array($this->user->lang('E-mail'), ''),
                     'Phone'             => array($this->user->lang('Phone'), ''),
                     'Fax'               => array($this->user->lang('Fax'), ''),
                 );
@@ -356,6 +425,7 @@ class PluginSynergywholesale extends RegistrarPlugin
 
     function getGeneralInfo($params)
     {
+        $userPackage = new UserPackage($params['userPackageId']);
         $data = [];
         $response = $this->makeRequest('domainInfo', ['domainName' => $params['sld'] . '.' . $params['tld']]);
 
@@ -364,6 +434,17 @@ class PluginSynergywholesale extends RegistrarPlugin
         $data['expiration'] = date('m/d/Y', strtotime($response->domain_expiry));
         $data['registrationstatus'] = $response->status;
         $data['purchasestatus'] = $response->status;
+        $data['id_protect'] = ($response->idProtect == 'Disabled') ? false : true;
+        
+        if($response->idProtect == 'Enabled') {
+               $userPackage->setCustomField('ID Protection', 'Enabled', CUSTOM_FIELDS_FOR_PACKAGE);            
+        } elseif ($response->idProtect == 'Disabled') {
+               $userPackage->setCustomField('ID Protection', 'Disabled', CUSTOM_FIELDS_FOR_PACKAGE);
+        } else {
+                $userPackage->setCustomField('ID Protection', 'Not Eligible', CUSTOM_FIELDS_FOR_PACKAGE);
+        }
+        
+        
         $data['autorenew'] = ($response->autoRenew == 'off') ? false : true;
         $data['is_registered'] = false;
         $data['is_expired'] = false;
@@ -433,6 +514,14 @@ class PluginSynergywholesale extends RegistrarPlugin
         } else {
             $response = $this->makeRequest('lockDomain', ['domainName' => $params['sld'] . '.' . $params['tld']]);
         }
+        
+            if ($params['package_addons']['SYNERGYIDPROTECT'] == '1') {
+                $response = $this->_makeRequest('enableIDProtection', ['domainName' => $params['sld'] . '.' . $params['tld']]);
+            }
+            else {
+            $response = $this->_makeRequest('disableIDProtection', ['domainName' => $params['sld'] . '.' . $params['tld']]);
+            throw new CE_Exception($params['package_addons']['IDPROTECT']);
+            }
     }
 
     function getDNS($params)
@@ -505,6 +594,33 @@ class PluginSynergywholesale extends RegistrarPlugin
     function sendTransferKey($params)
     {
     }
+    
+    function getIDProtectStatus($params)
+    {
+        $response = $this->makeRequest('domainInfo', ['domainName' => $params['sld'] . '.' . $params['tld']]);
+         $idProtectCheck = $userPackage->getCustomField('idProtect');
+        if ($response->idProtect == 'Enabled') {
+            $idProtectCheck->setCustomField('idProtect', 'Enabled');
+            return true;
+            throw new CE_Exception('Alert1');
+        } else {
+            $idProtectCheck->setCustomField('idProtect', 'Disabled');
+            return false;
+           throw new CE_Exception('Alert2');
+        }
+    }
+
+       
+ //        $idProtectCheck = $userPackage->getCustomField('idProtect');
+ //       if ($response->idProtect == 'Enabled') {
+ //           $idProtectCheck->setCustomField('idProtect', 'Yes');
+ //           return true;
+ //       } else {
+ //           $idProtectCheck->setCustomField('idProtect', 'No');
+ //           return false;
+ //       }
+
+
 
     private function validateState($state, $country)
     {
